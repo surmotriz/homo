@@ -1,6 +1,8 @@
 var express = require('express')
 var oracledb = require('oracledb')
 var firebase = require('firebase')
+var fs = require('fs')
+var AdmZip = require('adm-zip')
 var app = express()
 
 var conexion = {
@@ -9,11 +11,15 @@ var conexion = {
     connectString   :       '192.168.40.47/xe'
 }
 
-app.get('/', function(req,res){
-    //res.send("Hola Mundo");
+app.get('/', function(req,res){    
     res.send(new Date())
 })
 
+
+var zip = new AdmZip();
+zip.addFile("test.xml", new Buffer("inner content of the file"), "entry comment goes here", 0644 << 16);
+zip.addFile("moises.jpg", fs.readFileSync('./moises.jpg') , "entry comment goes here", 0644 << 16);
+zip.writeZip("./files.zip");
 
 setInterval(function(){
     oracledb.getConnection(conexion, function (err, conexion) {
@@ -23,7 +29,7 @@ setInterval(function(){
                 fecha: { val: 'N', type:oracledb.STRING },
                 envios: { type: oracledb.CURSOR, dir: oracledb.BIND_OUT }
             },
-            function (err, result) {
+            function (err, result){
                 result.outBinds.envios.getRows(1000,
                     function(err, rows){
                         var invoice = '';
@@ -41,49 +47,6 @@ setInterval(function(){
 }, 2000);
 
 
-app.get('/envios/:fecha/', function(req, res){
-    oracledb.getConnection(conexion, function (err, conexion) {
-        conexion.execute(
-            "BEGIN PKG_ELECTRONICA.ENVIOS(:fecha,:envios); END;",
-            {             
-                fecha: { val: req.params.fecha, type:oracledb.STRING },                               
-                envios: { type: oracledb.CURSOR, dir: oracledb.BIND_OUT }
-            },
-            function (err, result) {
-                result.outBinds.envios.getRows(
-                    1000,
-                    function(err, rows){
-                        res.send(rows);
-                    }
-                )
-            }
-        );
-    });
-});
-
-app.get('/docs/:gen/:emp/:pag/:fecha1/:fecha2/', function(req, res){
-    oracledb.getConnection(conexion, function (err, conexion) {
-        conexion.execute(
-            "BEGIN PKG_ELECTRONICA.DOCS(:gen, :emp, :pag, :fecha1, :fecha2, :docs); END;",
-            {
-                gen: { val: req.params.gen, type:oracledb.STRING },
-                emp: { val: req.params.emp, type:oracledb.STRING },
-                pag: { val: req.params.pag, dir:oracledb.BIND_IN }, 
-                fecha1: { val: req.params.fecha1, type:oracledb.STRING },
-                fecha2: { val: req.params.fecha2, type:oracledb.STRING },                               
-                docs: { type: oracledb.CURSOR, dir: oracledb.BIND_OUT }
-            },
-            function (err, result) {
-                result.outBinds.docs.getRows(
-                    1000,
-                    function(err, rows){
-                        res.send(rows);
-                    }
-                )
-            }
-        );
-    });
-});
 
 app.listen(3000, function(){
     console.log("Servidor Corriendo en http://localhost:3000");

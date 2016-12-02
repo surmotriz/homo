@@ -6,7 +6,7 @@ var app = express()
 var conexion = {
     user            :       'dti',
     password        :       'dti',
-    connectString   :       '192.168.0.22/xe'
+    connectString   :       '192.168.40.47/xe'
 }
 
 app.get('/', function(req,res){
@@ -15,30 +15,29 @@ app.get('/', function(req,res){
 })
 
 
-var i = 1
 setInterval(function(){
     oracledb.getConnection(conexion, function (err, conexion) {
         conexion.execute(
             "BEGIN PKG_ELECTRONICA.ENVIOS(:fecha,:envios); END;",
-            {             
-                fecha: { val: 'N', type:oracledb.STRING },                               
+            {
+                fecha: { val: 'N', type:oracledb.STRING },
                 envios: { type: oracledb.CURSOR, dir: oracledb.BIND_OUT }
             },
             function (err, result) {
                 result.outBinds.envios.getRows(1000,
                     function(err, rows){
                         var invoice = '';
-                        for(var h=0; h<=rows[0].length; ++h){
-                            invoice += rows[0][h];                             
-                        }
-                        console.log(invoice);
-                                               
+                        for(var i=0; i<=(rows.length-1); ++i){
+                            for(var h=0; h<=(rows[i].length-1); ++h){
+                                invoice += rows[i][h];
+                            }
+                            console.log(invoice);
+                        }                        
                     }
                 )
             }
         );
-    });    
-    i++
+    });
 }, 2000);
 
 
